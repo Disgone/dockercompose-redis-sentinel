@@ -1,0 +1,40 @@
+version: "2"
+services:
+  redis-master:
+    image: redis:5.0.1
+    ports:
+      - "6379"
+    labels:
+      - redis
+      - redis-master
+    volumes:
+      - "redis-master-data:/data"
+  redis-slave:
+    image: redis:5.0.1
+    command: redis-server --slaveof redis-master 6379
+    ports:
+      - "6379"
+    depends_on:
+      - redis-master
+    labels:
+      - redis
+      - redis-slave
+    volumes:
+      - "redis-slave-data:/data"
+  sentinel:
+    build:
+      context: ./sentinel
+      args:
+        SENTINEL_FAILOVER: 5000
+        SENTINEL_DOWN_AFTER: 15000
+        SENTINEL_QUORUM: 2
+    ports:
+      - "26379"
+    depends_on:
+      - redis-master
+      - redis-slave
+volumes:
+  redis-master-data:
+    driver: local
+  redis-slave-data:
+    driver: local
