@@ -1,7 +1,7 @@
-version: "2"
+version: "3"
 services:
   redis-master:
-    image: redis:5.0.1
+    image: redis:5.0.3
     ports:
       - "6379"
     labels:
@@ -10,10 +10,12 @@ services:
     volumes:
       - "redis-master-data:/data"
   redis-slave:
-    image: redis:5.0.1
+    image: redis:5.0.3
     command: redis-server --slaveof redis-master 6379
     ports:
       - "6379"
+    links:
+      - redis-master
     depends_on:
       - redis-master
     labels:
@@ -21,18 +23,23 @@ services:
       - redis-slave
     volumes:
       - "redis-slave-data:/data"
-  sentinel:
+  redis-sentinel:
     build:
       context: ./sentinel
       args:
-        SENTINEL_FAILOVER: 5000
-        SENTINEL_DOWN_AFTER: 15000
-        SENTINEL_QUORUM: 2
+        - SENTINEL_QUORUM=2
+        - SENTINEL_DOWN_THRESHOLD=7000
+        - SENTINEL_FAILOVER_THRESHOLD=25000
     ports:
       - "26379"
+    links:
+      - redis-master
     depends_on:
       - redis-master
       - redis-slave
+    labels:
+      - redis
+      - redis-sentinel
 volumes:
   redis-master-data:
     driver: local
