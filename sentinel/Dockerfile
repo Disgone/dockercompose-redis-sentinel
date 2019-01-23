@@ -1,4 +1,4 @@
-FROM redis:5.0.1-alpine
+FROM redis:5.0.3-alpine
 MAINTAINER Shaun Smith <disgone[@]gmail.com>
 
 RUN apk update && apk upgrade && apk add --update \
@@ -6,16 +6,19 @@ RUN apk update && apk upgrade && apk add --update \
     bash \
     sed
 
-ENV SENTINEL_QUORUM 2
-ENV SENTINEL_DOWN_TIMEOUT 5000
-ENV SENTINEL_FAILOVER_TIMEOUT 15000
+ARG SENTINEL_QUORUM=2
+ARG SENTINEL_DOWN_THRESHOLD=5000
+ARG SENTINEL_FAILOVER_THRESHOLD=15000
 
-ADD sentinel.conf /etc/redis/sentinel.conf
+ENV SENTINEL_QUORUM $SENTINEL_QUORUM
+ENV SENTINEL_DOWN_THRESHOLD $SENTINEL_DOWN_THRESHOLD
+ENV SENTINEL_FAILOVER_THRESHOLD $SENTINEL_FAILOVER_THRESHOLD
 
-COPY run_sentinel.sh /run_sentinel.sh
+COPY sentinel.conf /etc/redis/sentinel.conf
+COPY run_sentinel.sh /usr/local/bin/run_sentinel.sh
 
-RUN chmod +x /run_sentinel.sh
+RUN chmod +x /usr/local/bin/run_sentinel.sh
 
 EXPOSE 26379
 
-ENTRYPOINT [ "/run_sentinel.sh" ]
+ENTRYPOINT [ "run_sentinel.sh" ]
